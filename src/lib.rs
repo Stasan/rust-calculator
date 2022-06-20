@@ -42,11 +42,7 @@ fn calculate(expression: Vec<ExpressionEntry>) -> i32 {
             }
         };
     }
-    let mut result = 0;
-    if let Some(Operand(value)) = stack.pop() {
-        result = value
-    }
-    result
+    get_operand_from_stack(&mut stack)
 }
 
 fn get_operand_from_stack(stack: &mut Vec<ExpressionEntry>) -> i32 {
