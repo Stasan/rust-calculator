@@ -48,17 +48,17 @@ impl PostfixNotation {
                     let operand2 = get_operand_from_stack(&mut stack);
                     stack.push(Operand(operand2 + operand1))
                 }
-                Operator("-") => {
+                Operator(MINUS) => {
                     let operand1 = get_operand_from_stack(&mut stack);
                     let operand2 = get_operand_from_stack(&mut stack);
                     stack.push(Operand(operand2 - operand1))
                 }
-                Operator("*") => {
+                Operator(MULTIPLY) => {
                     let operand1 = get_operand_from_stack(&mut stack);
                     let operand2 = get_operand_from_stack(&mut stack);
                     stack.push(Operand(operand2 * operand1))
                 }
-                Operator("/") => {
+                Operator(DIVIDE) => {
                     let operand1 = get_operand_from_stack(&mut stack);
                     let operand2 = get_operand_from_stack(&mut stack);
                     stack.push(Operand(operand2 / operand1))
@@ -82,10 +82,10 @@ fn postfix_to_expression(postfix: &str) -> Vec<ExpressionEntry> {
     let expression = postfix
         .split(' ')
         .map(|item| match item {
-            "+" => Operator(PLUS),
-            "-" => Operator(MINUS),
-            "/" => Operator(DIVIDE),
-            "*" => Operator(MULTIPLY),
+            PLUS => Operator(PLUS),
+            MINUS => Operator(MINUS),
+            DIVIDE => Operator(DIVIDE),
+            MULTIPLY => Operator(MULTIPLY),
             _ => Operand(FromStr::from_str(item).unwrap()),
         })
         .collect();

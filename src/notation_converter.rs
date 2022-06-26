@@ -56,7 +56,6 @@ pub fn infix_to_postfix(infix: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::ExpressionEntry::*;
     use super::*;
 
     #[test]
