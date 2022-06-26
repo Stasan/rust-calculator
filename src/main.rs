@@ -2,7 +2,6 @@ use std::{env, process};
 use calculator::PostfixNotation;
 
 fn main() {
-    println!("Provide valid math expression using numbers and operator +-/* without space characters");
     let args: Vec<String> = env::args().collect();
 
     let config = Config::new(&args).unwrap_or_else(|err| {
