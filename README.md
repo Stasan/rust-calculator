@@ -5,9 +5,12 @@ Calculator gets a math expression in infix notation. Expression can include numb
 Expression is passed as a command line argument for the program. It will be transformed into postfix notation and eveluated.
 
 Run example:
+
 cargo run (13+5)*2
 
 Output example:
 You provided following expression: (13+5)*2
+
 Expression in postfix notation 13 5 + 2 *
+
 Result: 36
