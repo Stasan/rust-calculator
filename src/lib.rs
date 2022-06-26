@@ -1,8 +1,16 @@
 use crate::ExpressionEntry::Operand;
 use crate::ExpressionEntry::Operator;
-// use std::env;
-// use std::error::Error;
-// use std::fs;
+use std::fmt;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+use crate::notation_converter::infix_to_postfix;
+
+const PLUS: &str = "+";
+const MINUS: &str = "-";
+const DIVIDE: &str = "/";
+const MULTIPLY: &str = "*";
+
+mod notation_converter;
 
 enum ExpressionEntry {
     Operand(i32),
@@ -11,18 +19,23 @@ enum ExpressionEntry {
 
 pub struct PostfixNotation {
     expression: Vec<ExpressionEntry>,
+    postfix_str: String,
+}
+
+impl Display for PostfixNotation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Expression in postfix notation {}", self.postfix_str)
+    }
 }
 
 impl PostfixNotation {
-    fn from_expression(expression: Vec<ExpressionEntry>) -> Self {
-        PostfixNotation { expression }
-    }
-
-    fn from_infix_string(_infix: &str) -> Self {
-        let expression = Vec::<ExpressionEntry>::new();
-        // let mut postfix
-
-        PostfixNotation { expression }
+    pub fn from_infix_string(infix: &str) -> Self {
+        let postfix_str = infix_to_postfix(infix);
+        let expression = postfix_to_expression(&postfix_str);
+        PostfixNotation {
+            expression,
+            postfix_str,
+        }
     }
 
     pub fn calculate(&self) -> i32 {
@@ -30,7 +43,7 @@ impl PostfixNotation {
         for expr in &self.expression {
             match expr {
                 Operand(value) => stack.push(Operand(*value)),
-                Operator("+") => {
+                Operator(PLUS) => {
                     let operand1 = get_operand_from_stack(&mut stack);
                     let operand2 = get_operand_from_stack(&mut stack);
                     stack.push(Operand(operand2 + operand1))
@@ -63,70 +76,22 @@ impl PostfixNotation {
 }
 
 fn postfix_to_expression(postfix: &str) -> Vec<ExpressionEntry> {
-    let mut expression = Vec::<ExpressionEntry>::new();
-
+    if postfix.len() == 0 {
+        return Vec::<ExpressionEntry>::new();
+    }
+    let expression = postfix
+        .split(' ')
+        .map(|item| match item {
+            "+" => Operator(PLUS),
+            "-" => Operator(MINUS),
+            "/" => Operator(DIVIDE),
+            "*" => Operator(MULTIPLY),
+            _ => Operand(FromStr::from_str(item).unwrap()),
+        })
+        .collect();
     expression
 }
 
-fn operator_priority(operator: &char) -> i32 {
-    match *operator {
-        '*' => 2,
-        '/' => 2,
-        '-' => 1,
-        '+' => 1,
-        _ => -1,
-    }
-}
-
-pub fn infix_to_postfix(infix: &str) -> String {
-    let mut result: String = "".to_owned();
-
-    let mut stack = Vec::<char>::new();
-
-    for c in infix.chars() {
-        match c {
-            '0'..='9' => {
-                result.push(c)},
-            '(' => stack.push(c),
-            ')' => {
-                while stack.len() > 0 && *stack.last().unwrap() != '(' {
-                    println!("Cycle 1");
-                    result.push(' ');
-                    result.push(stack.pop().unwrap());
-                }
-
-                println!("{}", stack.len());
-                if stack.len() == 0 || (stack.len() > 0 && *stack.last().unwrap() != '(') {
-                    panic!("Brackets mismatch. Check your expression.")
-                } else {
-                    stack.pop();
-                }
-            }
-
-            _ => {
-                result.push(' ');
-                while stack.len() > 0
-                    && operator_priority(&c) <= operator_priority(stack.last().unwrap())
-                {
-                    result.push(stack.pop().unwrap());
-                    result.push(' ');
-                }
-                stack.push(c);
-            }
-        }
-    }
-
-    while stack.len() > 0 {
-        let operator:char = stack.pop().unwrap();
-        if operator == '('
-        {
-            panic!("Brackets mismatch. Check your expression.");
-        }
-        result.push(' ');
-        result.push(operator);
-    }
-    result
-}
 
 fn get_operand_from_stack(stack: &mut Vec<ExpressionEntry>) -> i32 {
     let operand = stack.pop();
@@ -150,72 +115,46 @@ mod tests {
     use super::ExpressionEntry::*;
     use super::*;
 
-    #[test]
-    fn from_empty_infix_string_empty_postfix_string() {
-        assert_eq!("", infix_to_postfix(""));
+    impl PostfixNotation {
+        // Should be used for unit testing purposes only
+        fn from_expression(expression: Vec<ExpressionEntry>) -> Self {
+            let postfix_str = "".to_string();
+            PostfixNotation {
+                expression,
+                postfix_str,
+            }
+        }
     }
-
     #[test]
-    fn infix_to_postfix_add() {
-        assert_eq!("13 5 +", infix_to_postfix("13+5"));
-    }
+    fn postfix_to_expression_valid_expression() {
+        let expression = postfix_to_expression("13 5 + 2 *");
 
-    #[test]
-    fn infix_to_postfix_subtract() {
-        assert_eq!("13 5 -", infix_to_postfix("13-5"));
-    }
-
-    #[test]
-    fn infix_to_postfix_divide() {
-        assert_eq!("13 5 /", infix_to_postfix("13/5"));
-    }
-
-    #[test]
-    fn infix_to_postfix_multiply() {
-        assert_eq!("13 5 *", infix_to_postfix("13*5"));
-    }
-
-    #[test]
-    fn infix_to_postfix_multiplication_higher_priority_than_add() {
-        assert_eq!("13 5 2 * +", infix_to_postfix("13+5*2"));
-    }
-
-    #[test]
-    fn infix_to_postfix_multiplication_higher_priority_than_subtract() {
-        assert_eq!("13 5 2 * -", infix_to_postfix("13-5*2"));
-    }
-
-    #[test]
-    fn infix_to_postfix_division_higher_priority_than_add() {
-        assert_eq!("13 5 2 / +", infix_to_postfix("13+5/2"));
-    }
-
-    #[test]
-    fn infix_to_postfix_division_higher_priority_than_subtract() {
-        assert_eq!("13 5 2 / -", infix_to_postfix("13-5/2"));
-    }
-
-    #[test]
-    fn test() {
-        print!("{}", infix_to_postfix("13+5"));
-        assert_eq!("", infix_to_postfix(""));
-    }
-
-    #[test]
-    fn infix_to_postfix_brackets_change_priority() {
-        assert_eq!("13 5 + 2 *", infix_to_postfix("(13+5)*2"));
-    }
-
-    #[test]
-    #[should_panic]
-    fn infix_to_postfix_no_open_bracket() {
-        infix_to_postfix("13+5)*2");
-    }
-
-    #[test]
-    #[should_panic]
-    fn infix_to_postfix_no_close_bracket() {
-        infix_to_postfix("(13+5*2");
+        let item1 = match expression[0] {
+            Operand(v) => v,
+            _ => panic!("Wrong type of expression item"),
+        };
+        let item2 = match expression[1] {
+            Operand(v) => v,
+            _ => panic!("Wrong type of expression item"),
+        };
+        let item3 = match expression[2] {
+            Operator(v) => v,
+            _ => panic!("Wrong type of expression item"),
+        };
+        let item4 = match expression[3] {
+            Operand(v) => v,
+            _ => panic!("Wrong type of expression item"),
+        };
+        let item5 = match expression[4] {
+            Operator(v) => v,
+            _ => panic!("Wrong type of expression item"),
+        };
+        assert_eq!(5, expression.len());
+        assert_eq!(13, item1);
+        assert_eq!(5, item2);
+        assert_eq!(PLUS, item3);
+        assert_eq!(2, item4);
+        assert_eq!(MULTIPLY, item5);
     }
 
     #[test]
